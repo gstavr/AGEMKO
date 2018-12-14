@@ -1,26 +1,19 @@
-﻿using ExcelDataReader;
+﻿using ConsoleAppAGEMKO.model;
+using ExcelDataReader;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace ConsoleAppAGEMKO
 {
     class Program
     {
-
-        private static List<string> RegistryTypeList = new List<string>();
-        private static List<string> IndividualCategoryList = new List<string>();
-        private static List<string> StatusList = new List<string>();
-        private static List<string> MainActivityList = new List<string>();
-        private static List<string> RegionList = new List<string>();
-        private static Dictionary<int, List<string>> RegionalUnityList = new Dictionary<int, List<string>>();
-        private static Dictionary<int, List<string>> MunicipalityList = new Dictionary<int, List<string>>();
-        private static List<string> RepresentativeList = new List<string>();
-        private static List<Business> bussList = new List<Business>();
-        private static Business selectedBusiness = new Business();
+        
+        private static Businesses selectedBusiness = new Businesses();
         static void Main(string[] args)
         {
             ReadExcelFile();
@@ -65,7 +58,7 @@ namespace ConsoleAppAGEMKO
                     
                     foreach (DataRow row in tbl.Rows)
                     {
-                        selectedBusiness = new Business();
+                        selectedBusiness = new Businesses();
 
                         foreach (DataColumn column in tbl.Columns)
                         {
@@ -102,7 +95,7 @@ namespace ConsoleAppAGEMKO
                         }
 
                         Business(row);
-                        bussList.Add(selectedBusiness);
+                       
                     }
                 }
             }
@@ -110,178 +103,238 @@ namespace ConsoleAppAGEMKO
 
         private static void Business(DataRow v)
         {
-            selectedBusiness.AGEMKO = v[2].ToString();
-            selectedBusiness.AMKE = v[4].ToString();
-            selectedBusiness.AFM = v[5].ToString();
-            selectedBusiness.Epwnumia = v[6].ToString();
-            selectedBusiness.Title = v[7].ToString();
-            selectedBusiness.NumOfMembers = Convert.ToInt32(v[8].ToString());
-            selectedBusiness.Address = v[10].ToString();
-            selectedBusiness.Email = v[14].ToString();
-            selectedBusiness.RegisterDate = v.IsNull(16) ? default(DateTime?) : Convert.ToDateTime(v[16].ToString());
-            selectedBusiness.RegisterDate = v.IsNull(17) ? default(DateTime?) : Convert.ToDateTime(v[17].ToString());
+            selectedBusiness.BusinessesAgemko = v[2].ToString();
+            selectedBusiness.BusinessesAmke = v[4].ToString();
+            selectedBusiness.BusinessesVat = v[5].ToString();
+            selectedBusiness.BusinessesDescr = v[6].ToString();
+            selectedBusiness.BusinessesDistinctTitle = v[7].ToString();
+            selectedBusiness.BusinessesNumMembers = v.IsNull( ? default(int?): Convert.ToInt32(v[8].ToString());
+            selectedBusiness.BusinessesAddress = v[10].ToString();
+            selectedBusiness.BusinessesEmail = v[14].ToString();
+            selectedBusiness.BusinessesRegisterDate = v.IsNull(16) ? default(DateTime?) : Convert.ToDateTime(v[16].ToString());
+            selectedBusiness.BusinessesReviewDate = v.IsNull(17) ? default(DateTime?) : Convert.ToDateTime(v[17].ToString());
+
+            using (mydbContext context = new mydbContext())
+            {
+                Businesses rType = new Businesses();
+                rType = context.Businesses.FirstOrDefault(x => x.BusinessesVat.Equals(selectedBusiness.BusinessesVat));
+                if (rType == default(Businesses))
+                {
+                    int? maxID = context.Businesses.Count().Equals(0) ? default(int?) : context.Businesses.Max(x => x.BusinessesId);
+                    selectedBusiness.BusinessesId = maxID.HasValue ? maxID.Value + 1 : 1;
+                    context.Businesses.Add(selectedBusiness);
+                }
+                context.SaveChanges();
+            }
 
         }
 
         private static void Representative(object v)
         {
-            string element = string.Empty;
-            if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v, RepresentativeList)))
+            if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
-                RepresentativeList.Add(v.ToString());
-                selectedBusiness.Representative = RepresentativeList.IndexOf(v.ToString()) + 1;
-            }
-                
-        }
-
-        private static void Municipality(object v, object v1)
-        {
-            int indexOf = RegionList.IndexOf(v.ToString());
-
-            if (indexOf > -1)
-            {
-                string element = string.Empty;
-                if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v1, MunicipalityList, indexOf)))
+                using (mydbContext context = new mydbContext())
                 {
-                    MunicipalityList[indexOf].Add(v1.ToString());
-                    selectedBusiness.Municipality = indexOf + 1;
-                }
-            }
-        }
-
-        private static void RegionalUnity(object v, object v1)
-        {
-            int indexOf = RegionList.IndexOf(v.ToString());
-
-            if (indexOf > -1)
-            {
-
-                if(RegionalUnityList.Count > 0)
-                {
-                    string element = string.Empty;
-                    if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v1, RegionalUnityList, indexOf)))
+                    Representative rType = new Representative();
+                    rType = context.Representative.FirstOrDefault(x => x.RepresentativeFullName.Equals(v.ToString().Trim()));
+                    if (rType == default(Representative))
                     {
-                        RegionalUnityList[indexOf].Add(v1.ToString());
-                        selectedBusiness.RegionalUnity = indexOf + 1;
+                        rType = new Representative();
+                        int? maxID = context.Representative.Count().Equals(0) ? default(int?) : context.Representative.Max(x => x.RepresentativeId);
+                        rType.RepresentativeId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.RepresentativeFullName = v.ToString().Trim();
+                        context.Representative.Add(rType);
+                        context.SaveChanges();
                     }
+                    //selectedBusiness.RegionRegionId = rType.Re;
                 }
-                else
-                {
-                    List<string> itemInList = new List<string>();
-                    itemInList.Add(v1.ToString());
-                    RegionalUnityList.Add(indexOf, itemInList);
-                }
+            }
 
-                
+        }
+
+        private static void Municipality(object vPreviousColumn, object v1)
+        {
+            if (v1 != null && !string.IsNullOrWhiteSpace(v1.ToString()))
+            {
+                using (mydbContext context = new mydbContext())
+                {
+                    Regionalunity regType = new Regionalunity();
+                    regType = context.Regionalunity.FirstOrDefault(x => x.RegionalUnityDescr.Equals(vPreviousColumn.ToString().Trim()));
+                    if (regType == default(Regionalunity))
+                    {
+                        regType = new Regionalunity();
+                        int? maxID = context.Regionalunity.Count().Equals(0) ? default(int?) : context.Regionalunity.Max(x => x.RegionalUnityId);
+                        regType.RegionalUnityId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        regType.RegionalUnityDescr = vPreviousColumn.ToString().Trim();
+                        context.Regionalunity.Add(regType);
+                        context.SaveChanges();
+                    }
+
+
+                    Municipality rType = new Municipality();
+                    rType = context.Municipality.FirstOrDefault(x => x.MunicipalityDescr.Equals(v1.ToString().Trim()));
+                    if (rType == default(Municipality))
+                    {
+                        rType = new Municipality();
+                        int? maxID = context.Municipality.Count().Equals(0) ? default(int?) : context.Municipality.Max(x => x.MunicipalityId);
+                        rType.MunicipalityId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.MunicipalityDescr = v1.ToString().Trim();
+                        rType.RegionalUnityRegionalUnityId = regType.RegionalUnityId;
+                        context.Municipality.Add(rType);
+                        context.SaveChanges();
+                    }
+                    selectedBusiness.MunicipalityMunicipalityId = rType.MunicipalityId;
+                }
+            }
+        }
+
+        private static void RegionalUnity(object vPreviousColumn, object v1)
+        {
+            if (v1 != null && !string.IsNullOrWhiteSpace(v1.ToString()))
+            {
+                using (mydbContext context = new mydbContext())
+                {
+                    Region regType = new Region();
+                    regType = context.Region.FirstOrDefault(x => x.RegionDescr.Equals(vPreviousColumn.ToString().Trim()));
+                    if (regType == default(Region))
+                    {
+                        regType = new Region();
+                        int? maxID = context.Region.Count().Equals(0) ? default(int?) : context.Region.Max(x => x.RegionId);
+                        regType.RegionId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        regType.RegionDescr = vPreviousColumn.ToString().Trim();
+                        context.Region.Add(regType);
+                        context.SaveChanges();
+                    }
+
+
+                    Regionalunity rType = new Regionalunity();
+                    rType = context.Regionalunity.FirstOrDefault(x => x.RegionalUnityDescr.Equals(v1.ToString().Trim()));
+                    if (rType == default(Regionalunity))
+                    {
+                        rType = new Regionalunity();
+                        int? maxID = context.Regionalunity.Count().Equals(0) ? default(int?) : context.Regionalunity.Max(x => x.RegionalUnityId);
+                        rType.RegionalUnityId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.RegionalUnityDescr = v1.ToString().Trim();
+                        rType.RegionRegionId = regType.RegionId;
+                        context.Regionalunity.Add(rType);
+                        context.SaveChanges();
+                    }
+                    selectedBusiness.RegionalUnityRegionalUnityId = rType.RegionalUnityId;
+                }
             }
         }
 
         private static void Region(object v)
         {
-            string element = string.Empty;
-            if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v, RegionList)))
+            if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
-                RegionList.Add(v.ToString());
-                selectedBusiness.Region = RegionList.IndexOf(v.ToString()) + 1;
-            }   
+                using (mydbContext context = new mydbContext())
+                {
+                    Region rType = new Region();
+                    rType = context.Region.FirstOrDefault(x => x.RegionDescr.Equals(v.ToString().Trim()));
+                    if (rType == default(Region))
+                    {
+                        rType = new Region();
+                        int? maxID = context.Region.Count().Equals(0) ? default(int?) : context.Region.Max(x => x.RegionId);
+                        rType.RegionId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.RegionDescr = v.ToString().Trim();
+                        context.Region.Add(rType);
+                        context.SaveChanges();
+                    }
+                    selectedBusiness.RegionRegionId = rType.RegionId;
+                }
+            }
         }
 
         private static void MainActivity(object v)
-        {
-            string element = string.Empty;
-            if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v, MainActivityList)))
+        { 
+            if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
-                MainActivityList.Add(v.ToString());
-                selectedBusiness.MainCategory = MainActivityList.IndexOf(v.ToString()) + 1;
-            }   
+                using (mydbContext context = new mydbContext())
+                {
+                    Mainactivity rType = new Mainactivity();
+                    rType = context.Mainactivity.FirstOrDefault(x => x.MainActivityDescr.Equals(v.ToString().Trim()));
+                    if (rType == default(Mainactivity))
+                    {
+                        rType = new Mainactivity();
+                        int? maxID = context.Mainactivity.Count().Equals(0) ? default(int?) : context.Mainactivity.Max(x => x.MainActivityId);
+                        rType.MainActivityId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.MainActivityDescr = v.ToString().Trim();
+                        context.Mainactivity.Add(rType);
+                        context.SaveChanges();
+                    }
+                    selectedBusiness.MainActivityMainActivityId = rType.MainActivityId;
+                }
+            }
         }
 
         private static void Status(object v)
         {
-            string element = string.Empty;
-            if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v, StatusList)))
+            if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
-                StatusList.Add(v.ToString());
-                selectedBusiness.Status = StatusList.IndexOf(v.ToString()) + 1;
+                using (mydbContext context = new mydbContext())
+                {
+                    Status rType = new Status();
+                    rType = context.Status.FirstOrDefault(x => x.StatusDescr.Equals(v.ToString().Trim()));
+                    if (rType == default(Status))
+                    {
+                        rType = new Status();
+                        int? maxID = context.Status.Count().Equals(0) ? default(int?) : context.Status.Max(x => x.StatusId);
+                        rType.StatusId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.StatusDescr = v.ToString().Trim();
+                        context.Status.Add(rType);
+                        context.SaveChanges();
+                    }
+                    selectedBusiness.IndividualCategoryIndividualCategoryId = rType.StatusId;
+                }
             }
-                
         }
 
         private static void IndividualCategory(object v)
         {
-            string element = string.Empty;
-            if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v, IndividualCategoryList)))
+            if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
-                IndividualCategoryList.Add(v.ToString());
-                selectedBusiness.IndividualCategory = IndividualCategoryList.IndexOf(v.ToString()) + 1;
-            }   
+                using (mydbContext context = new mydbContext())
+                {
+                    Individualcategory rType = new Individualcategory();
+                    rType = context.Individualcategory.FirstOrDefault(x => x.IndividualCategoryDescr.Equals(v.ToString().Trim()));
+                    if (rType == default(Individualcategory))
+                    {
+                        rType = new Individualcategory();
+                        int? maxID = context.Individualcategory.Count().Equals(0) ? default(int?) : context.Individualcategory.Max(x => x.IndividualCategoryId);
+                        rType.IndividualCategoryId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.IndividualCategoryDescr = v.ToString().Trim();
+                        context.Individualcategory.Add(rType);
+                        context.SaveChanges();
+                    }
+                    selectedBusiness.IndividualCategoryIndividualCategoryId = rType.IndividualCategoryId;
+                }
+
+            }
         }
 
         private static void RegistryType(object v)
         {
-            string element = string.Empty;
-            if (!string.IsNullOrWhiteSpace(checkIfexistAndReturn(v, RegistryTypeList)))
+            if(v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
-                RegistryTypeList.Add(v.ToString());
-                selectedBusiness.RegistryType = RegistryTypeList.IndexOf(v.ToString()) + 1;
-            }   
-        }
-
-
-        /// <summary>
-        /// Check if Element is Contained to List or Not
-        /// </summary>
-        /// <param name="v"></param>
-        /// <param name="list"></param>
-        /// <returns></returns>
-        private static string checkIfexistAndReturn(object v, List<string> list)
-        {
-            string element = string.Empty;
-            if (v != null && !string.IsNullOrWhiteSpace(v.ToString().Trim()))
-            {
-                if (list.Count > 0)
+                using (mydbContext context = new mydbContext())
                 {
-                    int index = list.IndexOf(v.ToString().Trim());
-
-                    if (index == -1)
+                    Registrytype rType = new Registrytype();
+                    rType = context.Registrytype.FirstOrDefault(x => x.RegistryTypeDescr.Equals(v.ToString().Trim()));
+                    if(rType == default(Registrytype))
                     {
-                        element = v.ToString();
+                        rType = new Registrytype();
+                        int? maxID = context.Registrytype.Count().Equals(0) ? default(int?) :context.Registrytype.Max(x => x.RegistryTypeId);
+                        rType.RegistryTypeId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        rType.RegistryTypeDescr = v.ToString().Trim();
+                        context.Registrytype.Add(rType);
+                        context.SaveChanges();
                     }
+                    selectedBusiness.RegistryTypeRegistryTypeId = rType.RegistryTypeId;
+                }
 
-                }
-                else
-                {
-                    element = v.ToString();
-                }
             }
-
-            return element;
         }
-
-        private static string checkIfexistAndReturn(object v, Dictionary<int, List<string>> list, int indexOf)
-        {
-            string element = string.Empty;
-            if (v != null && !string.IsNullOrWhiteSpace(v.ToString().Trim()))
-            {
-                if (list.Count > 0)
-                {
-                    int index = list[indexOf].IndexOf(v.ToString().Trim());
-
-                    if (index == -1)
-                    {
-                        element = v.ToString();
-                    }
-
-                }
-                else
-                {
-                    element = v.ToString();
-                }
-            }
-
-            return element;
-        }
-
 
         private static void testc()
         {
