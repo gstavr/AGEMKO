@@ -60,6 +60,9 @@ namespace ConsoleAppAGEMKO.model
                 entity.HasIndex(e => e.RegistryTypeRegistryTypeId)
                     .HasName("fk_Businesses_RegistryType1_idx");
 
+                entity.HasIndex(e => e.RepresentativeRepresentativeId)
+                    .HasName("fk_Businesses_Representative1_idx");
+
                 entity.HasIndex(e => e.StatusStatusId)
                     .HasName("fk_Businesses_Status1_idx");
 
@@ -131,6 +134,10 @@ namespace ConsoleAppAGEMKO.model
                     .HasColumnName("RegistryType_RegistryTypeID")
                     .HasColumnType("int(11)");
 
+                entity.Property(e => e.RepresentativeRepresentativeId)
+                    .HasColumnName("Representative_RepresentativeID")
+                    .HasColumnType("int(11)");
+
                 entity.Property(e => e.StatusStatusId)
                     .HasColumnName("Status_StatusID")
                     .HasColumnType("int(11)");
@@ -164,6 +171,11 @@ namespace ConsoleAppAGEMKO.model
                     .WithMany(p => p.Businesses)
                     .HasForeignKey(d => d.RegistryTypeRegistryTypeId)
                     .HasConstraintName("fk_Businesses_RegistryType1");
+
+                entity.HasOne(d => d.RepresentativeRepresentative)
+                    .WithMany(p => p.Businesses)
+                    .HasForeignKey(d => d.RepresentativeRepresentativeId)
+                    .HasConstraintName("fk_Businesses_Representative1");
 
                 entity.HasOne(d => d.StatusStatus)
                     .WithMany(p => p.Businesses)

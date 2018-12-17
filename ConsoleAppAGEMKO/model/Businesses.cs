@@ -23,6 +23,7 @@ namespace ConsoleAppAGEMKO.model
         public int? RegionRegionId { get; set; }
         public int? RegionalUnityRegionalUnityId { get; set; }
         public int? MunicipalityMunicipalityId { get; set; }
+        public int? RepresentativeRepresentativeId { get; set; }
         public string BusinessesExtraField { get; set; }
 
         public virtual Individualcategory IndividualCategoryIndividualCategory { get; set; }
@@ -31,6 +32,7 @@ namespace ConsoleAppAGEMKO.model
         public virtual Region RegionRegion { get; set; }
         public virtual Regionalunity RegionalUnityRegionalUnity { get; set; }
         public virtual Registrytype RegistryTypeRegistryType { get; set; }
+        public virtual Representative RepresentativeRepresentative { get; set; }
         public virtual Status StatusStatus { get; set; }
     }
 }

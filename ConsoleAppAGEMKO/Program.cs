@@ -108,7 +108,7 @@ namespace ConsoleAppAGEMKO
             selectedBusiness.BusinessesVat = v[5].ToString();
             selectedBusiness.BusinessesDescr = v[6].ToString();
             selectedBusiness.BusinessesDistinctTitle = v[7].ToString();
-            selectedBusiness.BusinessesNumMembers = v.IsNull( ? default(int?): Convert.ToInt32(v[8].ToString());
+            selectedBusiness.BusinessesNumMembers = v.IsNull(8) ? default(int?): Convert.ToInt32(v[8].ToString());
             selectedBusiness.BusinessesAddress = v[10].ToString();
             selectedBusiness.BusinessesEmail = v[14].ToString();
             selectedBusiness.BusinessesRegisterDate = v.IsNull(16) ? default(DateTime?) : Convert.ToDateTime(v[16].ToString());
@@ -117,13 +117,36 @@ namespace ConsoleAppAGEMKO
             using (mydbContext context = new mydbContext())
             {
                 Businesses rType = new Businesses();
-                rType = context.Businesses.FirstOrDefault(x => x.BusinessesVat.Equals(selectedBusiness.BusinessesVat));
-                if (rType == default(Businesses))
+                
+                if (string.IsNullOrWhiteSpace(selectedBusiness.BusinessesVat))
                 {
-                    int? maxID = context.Businesses.Count().Equals(0) ? default(int?) : context.Businesses.Max(x => x.BusinessesId);
-                    selectedBusiness.BusinessesId = maxID.HasValue ? maxID.Value + 1 : 1;
-                    context.Businesses.Add(selectedBusiness);
+                    if (!string.IsNullOrWhiteSpace(selectedBusiness.BusinessesAgemko))
+                    {
+                        rType = context.Businesses.FirstOrDefault(x => x.BusinessesAgemko.Equals(selectedBusiness.BusinessesAgemko));
+                        if (rType == default(Businesses))
+                        {
+                            int? maxID = context.Businesses.Count().Equals(0) ? default(int?) : context.Businesses.Max(x => x.BusinessesId);
+                            selectedBusiness.BusinessesId = maxID.HasValue ? maxID.Value + 1 : 1;
+                            context.Businesses.Add(selectedBusiness);
+                        }
+
+                        
+                    }
                 }
+                else
+                {
+                    rType = context.Businesses.FirstOrDefault(x => x.BusinessesVat.Equals(selectedBusiness.BusinessesVat));
+                    if (rType == default(Businesses))
+                    {
+                        int? maxID = context.Businesses.Count().Equals(0) ? default(int?) : context.Businesses.Max(x => x.BusinessesId);
+                        selectedBusiness.BusinessesId = maxID.HasValue ? maxID.Value + 1 : 1;
+                        context.Businesses.Add(selectedBusiness);
+                    }
+                }
+
+                rType.StatusStatusId = selectedBusiness.StatusStatusId;
+                rType.RepresentativeRepresentativeId = selectedBusiness.RepresentativeRepresentativeId;
+
                 context.SaveChanges();
             }
 
@@ -146,7 +169,7 @@ namespace ConsoleAppAGEMKO
                         context.Representative.Add(rType);
                         context.SaveChanges();
                     }
-                    //selectedBusiness.RegionRegionId = rType.Re;
+                    selectedBusiness.RepresentativeRepresentativeId = rType.RepresentativeId;
                 }
             }
 
@@ -285,7 +308,7 @@ namespace ConsoleAppAGEMKO
                         context.Status.Add(rType);
                         context.SaveChanges();
                     }
-                    selectedBusiness.IndividualCategoryIndividualCategoryId = rType.StatusId;
+                    selectedBusiness.StatusStatusId = rType.StatusId;
                 }
             }
         }
