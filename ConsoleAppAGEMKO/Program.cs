@@ -12,15 +12,69 @@ namespace ConsoleAppAGEMKO
 {
     class Program
     {
-        
+
         private static Businesses selectedBusiness = new Businesses();
         static void Main(string[] args)
         {
-            ReadExcelFile();
+            //ReadExcelFile();
+            ReadExcelFileForSqlScript();
             testc();
             Console.WriteLine("Hello World!");
         }
 
+        private static void ReadExcelFileForSqlScript()
+        {
+            string filePath = System.AppDomain.CurrentDomain.BaseDirectory;
+            filePath = Path.Combine(filePath, "agemkoSql.xlsx");
+
+            if (File.Exists(filePath))
+            {
+                FileStream stream = File.Open(filePath, FileMode.Open, FileAccess.Read);
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                //1. Reading from a binary Excel file ('97-2003 format; *.xls)
+                //IExcelDataReader excelReader = ExcelReaderFactory.CreateBinaryReader(stream);
+                //...
+                //2. Reading from a OpenXml Excel file (2007 format; *.xlsx)
+                IExcelDataReader excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream);
+                //...
+                //3. DataSet - The result of each spreadsheet will be created in the result.Tables
+                DataSet result = excelReader.AsDataSet();
+                //...
+                //4. DataSet - Create column names from first row
+                //5. Data Reader methods
+                //6. Free resources (IExcelDataReader is IDisposable)
+                excelReader.Close();
+                               
+                if(result.Tables.Count > 0)
+                {
+                    DataTable dt = result.Tables[0];
+                    StringBuilder sb = new StringBuilder();
+                    foreach(DataRow row in dt.Rows)
+                    {
+                        if (!row[0].ToString().Equals("addresskey"))
+                        {
+                            string query = string.Format(@"
+                            SET @g = 'POINT({0} {1})';
+                            INSERT INTO `wpct_wpgmza`(`id`, `map_id`, `address`, `description`, `pic`, `link`, `icon`, `lat`, `lng`, `anim`, `title`, `infoopen`, `category`, `approved`, `retina`, `type`, `did`, `other_data`, `latlng`) VALUES 
+                            (1, 1, '{2}', '{3}', '', '', '', '{0}', '{1}', '0', '', '0', '', 1, 0, 0, '', '', ST_PointFromText(@g));
+                            "
+                           , row[1].ToString()
+                           , row[2].ToString()
+                           , row[0].ToString()
+                           , row[4].ToString());
+
+                            sb.Append(query);
+                        }
+                    }
+
+                    using (StreamWriter writer = new StreamWriter($"SqlScript{DateTime.Now.ToString("dd_MM_yyyy_hh_mm_ss")}.txt"))
+                    {
+                        writer.Write(sb.ToString());
+                    }
+                }
+            }
+
+        }
 
 
         private static void ReadExcelFile()
@@ -55,7 +109,7 @@ namespace ConsoleAppAGEMKO
 
                     tbl.AcceptChanges();
 
-                    
+
                     foreach (DataRow row in tbl.Rows)
                     {
                         selectedBusiness = new Businesses();
@@ -95,7 +149,7 @@ namespace ConsoleAppAGEMKO
                         }
 
                         Business(row);
-                       
+
                     }
                 }
             }
@@ -108,7 +162,7 @@ namespace ConsoleAppAGEMKO
             selectedBusiness.BusinessesVat = v[5].ToString();
             selectedBusiness.BusinessesDescr = v[6].ToString();
             selectedBusiness.BusinessesDistinctTitle = v[7].ToString();
-            selectedBusiness.BusinessesNumMembers = v.IsNull(8) ? default(int?): Convert.ToInt32(v[8].ToString());
+            selectedBusiness.BusinessesNumMembers = v.IsNull(8) ? default(int?) : Convert.ToInt32(v[8].ToString());
             selectedBusiness.BusinessesAddress = v[10].ToString();
             selectedBusiness.BusinessesEmail = v[14].ToString();
             selectedBusiness.BusinessesRegisterDate = v.IsNull(16) ? default(DateTime?) : Convert.ToDateTime(v[16].ToString());
@@ -117,7 +171,7 @@ namespace ConsoleAppAGEMKO
             using (mydbContext context = new mydbContext())
             {
                 Businesses rType = new Businesses();
-                
+
                 if (string.IsNullOrWhiteSpace(selectedBusiness.BusinessesVat))
                 {
                     if (!string.IsNullOrWhiteSpace(selectedBusiness.BusinessesAgemko))
@@ -130,7 +184,7 @@ namespace ConsoleAppAGEMKO
                             context.Businesses.Add(selectedBusiness);
                         }
 
-                        
+
                     }
                 }
                 else
@@ -270,7 +324,7 @@ namespace ConsoleAppAGEMKO
         }
 
         private static void MainActivity(object v)
-        { 
+        {
             if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
                 using (mydbContext context = new mydbContext())
@@ -338,16 +392,16 @@ namespace ConsoleAppAGEMKO
 
         private static void RegistryType(object v)
         {
-            if(v != null && !string.IsNullOrWhiteSpace(v.ToString()))
+            if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
             {
                 using (mydbContext context = new mydbContext())
                 {
                     Registrytype rType = new Registrytype();
                     rType = context.Registrytype.FirstOrDefault(x => x.RegistryTypeDescr.Equals(v.ToString().Trim()));
-                    if(rType == default(Registrytype))
+                    if (rType == default(Registrytype))
                     {
                         rType = new Registrytype();
-                        int? maxID = context.Registrytype.Count().Equals(0) ? default(int?) :context.Registrytype.Max(x => x.RegistryTypeId);
+                        int? maxID = context.Registrytype.Count().Equals(0) ? default(int?) : context.Registrytype.Max(x => x.RegistryTypeId);
                         rType.RegistryTypeId = maxID.HasValue ? maxID.Value + 1 : 1;
                         rType.RegistryTypeDescr = v.ToString().Trim();
                         context.Registrytype.Add(rType);
