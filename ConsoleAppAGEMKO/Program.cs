@@ -25,7 +25,7 @@ namespace ConsoleAppAGEMKO
         private static void ReadExcelFileForSqlScript()
         {
             string filePath = System.AppDomain.CurrentDomain.BaseDirectory;
-            filePath = Path.Combine(filePath, "agemkoSql.xlsx");
+            filePath = Path.Combine(filePath, "All.xlsx");
 
             if (File.Exists(filePath))
             {
@@ -52,7 +52,7 @@ namespace ConsoleAppAGEMKO
                     int counter = 30;
                     foreach(DataRow row in dt.Rows)
                     {
-                        if (!row.IsNull(0) && row.IsNull(1) && row.IsNull(2) && !row[0].ToString().Equals("addresskey"))
+                        if (!row.IsNull(0) && !row.IsNull(1) && !row.IsNull(2) && !row[0].ToString().Equals("addresskey"))
                         {
                             string query = string.Format(@"
                             SET @g = 'POINT({0} {1})';
@@ -61,8 +61,8 @@ namespace ConsoleAppAGEMKO
                             "
                            , row[1].ToString()
                            , row[2].ToString()
-                           , row[0].ToString()
-                           , row[4].ToString()
+                           , row[0].ToString().Replace(',', ' ')
+                           , row[4].ToString().Replace(',', ' ')
                            , counter++);
 
                             sb.Append(query);
