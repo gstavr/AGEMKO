@@ -18,7 +18,7 @@ namespace ConsoleAppAGEMKO
         {
             //ReadExcelFile();
             ReadExcelFileForSqlScript();
-            testc();
+            //testc();
             Console.WriteLine("Hello World!");
         }
 
@@ -49,7 +49,7 @@ namespace ConsoleAppAGEMKO
                 {
                     DataTable dt = result.Tables[0];
                     StringBuilder sb = new StringBuilder();
-                    int counter = 30;
+                    int counter = 1000;
                     foreach(DataRow row in dt.Rows)
                     {
                         if (!row.IsNull(0) && !row.IsNull(1) && !row.IsNull(2) && !row[0].ToString().Equals("addresskey"))
@@ -57,12 +57,12 @@ namespace ConsoleAppAGEMKO
                             string query = string.Format(@"
                             SET @g = 'POINT({0} {1})';
                             INSERT INTO `wpct_wpgmza`(`id`, `map_id`, `address`, `description`, `pic`, `link`, `icon`, `lat`, `lng`, `anim`, `title`, `infoopen`, `category`, `approved`, `retina`, `type`, `did`, `other_data`, `latlng`) VALUES 
-                            ({4}, 1, '{2}', '{3}', '', '', '', '{0}', '{1}', '0', '', '0', '', 1, 0, 0, '', '', ST_PointFromText(@g));
+                            ({4}, 1, '{3}', '{3}', '', '', '', '{0}', '{1}', '0', '', '0', '', 1, 0, 0, '', '', ST_PointFromText(@g));
                             "
                            , row[1].ToString()
                            , row[2].ToString()
                            , row[0].ToString().Replace(',', ' ')
-                           , row[4].ToString().Replace(',', ' ')
+                           , row[4].ToString().Replace(',', ' ').Replace("'", " ")
                            , counter++);
 
                             sb.Append(query);
