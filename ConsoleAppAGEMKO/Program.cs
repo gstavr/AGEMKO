@@ -1,12 +1,13 @@
 ﻿using ConsoleAppAGEMKO.model;
 using ExcelDataReader;
-using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Text;
 using System.Linq;
+using ConsoleAppAGEMKO.DataBase;
+using System.Text.RegularExpressions;
 
 namespace ConsoleAppAGEMKO
 {
@@ -14,18 +15,23 @@ namespace ConsoleAppAGEMKO
     {
 
         private static Businesses selectedBusiness = new Businesses();
+
         static void Main(string[] args)
         {
             //ReadExcelFile();
-            ReadExcelFileForSqlScript();
+            CreateScript();
+            //ReadExcelFileForSqlScript();
             //testc();
             Console.WriteLine("Hello World!");
         }
 
         private static void ReadExcelFileForSqlScript()
         {
+
+            AGEMKOContext _context = new AGEMKOContext();
+
             string filePath = System.AppDomain.CurrentDomain.BaseDirectory;
-            filePath = Path.Combine(filePath, "All.xlsx");
+            filePath = Path.Combine(filePath, "ReceivedExcel.xlsx");
             DataSet result = new DataSet();
             if (File.Exists(filePath))
             {
@@ -45,44 +51,42 @@ namespace ConsoleAppAGEMKO
                 //6. Free resources (IExcelDataReader is IDisposable)
                 excelReader.Close();
 
-                //if (result.Tables.Count > 0)
-                //{
-                //    DataTable dt = result.Tables[0];
-                //    StringBuilder sb = new StringBuilder();
-                //    int counter = 1000;
-                //    foreach(DataRow row in dt.Rows)
-                //    {
-                //        if (!row.IsNull(0) && !row.IsNull(1) && !row.IsNull(2) && !row[0].ToString().Equals("addresskey"))
-                //        {
-                //            string query = string.Format(@"
-                //            SET @g = 'POINT({0} {1})';
-                //            INSERT INTO `wpct_wpgmza`(`id`, `map_id`, `address`, `description`, `pic`, `link`, `icon`, `lat`, `lng`, `anim`, `title`, `infoopen`, `category`, `approved`, `retina`, `type`, `did`, `other_data`, `latlng`) VALUES 
-                //            ({4}, 1, '{3}', '{3}', '', '', '', '{0}', '{1}', '0', '', '0', '', 1, 0, 0, '', '', ST_PointFromText(@g));
-                //            "
-                //           , row[1].ToString()
-                //           , row[2].ToString()
-                //           , row[0].ToString().Replace(',', ' ')
-                //           , row[4].ToString().Replace(',', ' ').Replace("'", " ")
-                //           , counter++);
+                foreach (DataRow row in result.Tables[0].Rows)
+                {
 
-                //            sb.Append(query);
-                //        }
-                //    }
+                    if (!row.IsNull(10))
+                    {
+                        MainTable record = new MainTable();
+                        string katigoria = row.IsNull(1) ? string.Empty : row[1].ToString();
+                        string katastasi = row.IsNull(3) ? string.Empty : row[3].ToString();
+                        string afm = row.IsNull(5) ? string.Empty : row[5].ToString();
+                        string epwnumia = row[6].ToString().Trim();
+                        string diakritosTitlos = row.IsNull(7) ? string.Empty : row[7].ToString();
+                        string drastiriotita = row.IsNull(9) ? string.Empty : row[9].ToString();
+                        string address = row[10].ToString().Trim();
+                        string email = row.IsNull(14) ? string.Empty : row[14].ToString();
 
-                //    using (StreamWriter writer = new StreamWriter($"FinalSqlScript{DateTime.Now.ToString("dd_MM_yyyy_hh_mm_ss")}.txt"))
-                //    {
-                //        writer.Write(sb.ToString());
-                //    }
-                //}
+                        record.Catigoria = katigoria.Trim();
+                        record.Katastasi = katastasi.Trim(); ;
+                        record.Afm = afm.Trim();
+                        record.Epwnumia = epwnumia.Trim();
+                        record.DiakritosTitlos = diakritosTitlos.Trim();
+                        record.Drastiriotita = drastiriotita.Trim();
+                        record.Address = address.Trim();
+                        record.Email = email.Trim();
+                        _context.MainTable.Add(record);
+                        _context.SaveChanges();
+                    }
+                }
             }
 
             DataSet result2 = new DataSet();
             string filePath2 = System.AppDomain.CurrentDomain.BaseDirectory;
-            filePath2 = Path.Combine(filePath2, "ReceivedExcel.xlsx");
+            filePath2 = Path.Combine(filePath2, "All.xlsx");
             if (File.Exists(filePath2))
             {
                 FileStream stream = File.Open(filePath2, FileMode.Open, FileAccess.Read);
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                //Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 //1. Reading from a binary Excel file ('97-2003 format; *.xls)
                 //IExcelDataReader excelReader = ExcelReaderFactory.CreateBinaryReader(stream);
                 //...
@@ -96,98 +100,98 @@ namespace ConsoleAppAGEMKO
                 //5. Data Reader methods
                 //6. Free resources (IExcelDataReader is IDisposable)
                 excelReader.Close();
-            }
 
-            DataTable mainTable = result.Tables[0];
-            mainTable.Columns.Add("katigoria");
-            mainTable.Columns.Add("email");
-            mainTable.AcceptChanges();
 
-            int firsttableCounter = 0;
-            
-            int counter = 1;
-            StringBuilder sb = new StringBuilder();
-            foreach (DataRow row in mainTable.Rows)
-            {
-                if(!row.IsNull(0) && !row.IsNull(1) && !row.IsNull(2) && !row.IsNull(4) && !row.IsNull(6))
+                foreach (DataRow row in result2.Tables[0].Rows)
                 {
                     string addresskey = row[0].ToString();
                     string lat = row[1].ToString();
                     string longitude = row[2].ToString();
 
-                    string bussinessSurname = row[4].ToString().Trim();
-                    string bussinessAddress= row[6].ToString().Trim();
-
-                    firsttableCounter++;
-                    foreach (DataRow receivedExcelRows in result2.Tables[0].Rows)
+                    if (!row.IsNull(0))
                     {
-                        /*
-                         * 1= ΕΠΙΜΕΡΟΥΣ ΚΑΤΗΓΟΡΙΑ
-                         * 6 = ΕΠΩΝΥΜΙΑ	
-                         * 7 = ΔΙΑΚΡΙΤΙΚΟΣ ΤΙΤΛΟΣ
-                         * 10 = ΣΤΟΙΧΕΙΑ Δ/ΝΣΗΣ
-                         * 14 = email
-                         * 
-                         * Διακριτικό τίτλο
-                            Επωνυμία
-                            Κατηγορία
-                            Ετος ίδρυσης
-                            Στοιχεία επικοινωνίας (δ/νση, τηλ, email)
-                         */
+                        MainTable record = _context.MainTable.FirstOrDefault(x => x.Address.Equals(row[0].ToString()));
 
-                        string add = receivedExcelRows[7].ToString();
-                        if (!receivedExcelRows.IsNull(6) && !receivedExcelRows.IsNull(10))
+                        if (record != default(MainTable))
                         {
-                            string katigoria = receivedExcelRows.IsNull(1) ? string.Empty : receivedExcelRows[1].ToString();
-                            string epwnumia = receivedExcelRows[6].ToString().Trim();
-                            string diakritosTitlos = receivedExcelRows.IsNull(7) ? string.Empty : receivedExcelRows[7].ToString();
-                            string address = receivedExcelRows[10].ToString().Trim();
-                            string email = receivedExcelRows.IsNull(14) ? string.Empty : receivedExcelRows[14].ToString();
-
-                            if(bussinessSurname.Equals(epwnumia) && bussinessAddress.Equals(address))
+                            record.Latitude = lat;
+                            record.Longitude = longitude;
+                            _context.SaveChanges();
+                        }
+                        else
+                        {
+                            if (!row.IsNull(5) && !row.IsNull(6))
                             {
-                                row["katigoria"] = katigoria;
-                                row["email"] = email;
-                                int id = counter++;
-
-                                string addr = string.Format("<div><ul style='list-style: none'><li>{0}</li><li>{1}</li><li>{2}</li><li>{3}</li><li>{4}</li></ul></div>", diakritosTitlos, epwnumia, katigoria, string.Empty, email);
-
-                                string query = string.Format(@"
-                                        SET @g = 'POINT({0} {1})';
-                                        INSERT INTO `wpct_wpgmza`(`id`, `map_id`, `address`, `description`, `pic`, `link`, `icon`, `lat`, `lng`, `anim`, `title`, `infoopen`, `category`, `approved`, `retina`, `type`, `did`, `other_data`, `latlng`) VALUES 
-                                        ({2}, 1, '{3}', '{4}', '', '', '', '{0}', '{1}', '0', '', '0', '', 1, 0, 0, '', '', ST_PointFromText(@g));
-                                        "
-                               , lat
-                               , longitude
-                               , id
-                               , epwnumia
-                               , addr.Replace("'", "''"));
-
-                                sb.Append(query);
-
-                                if (!string.IsNullOrWhiteSpace(email))
+                                record = _context.MainTable.FirstOrDefault(x => x.Address.Equals(row[6].ToString().Trim()) && x.DiakritosTitlos.Equals(row[5].ToString().Trim()));
+                                if (record != default(MainTable))
                                 {
-                                    string emailInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (2,{0},'{1}')", id, email);
-
-                                    sb.Append(emailInsert);
+                                    record.Latitude = lat;
+                                    record.Longitude = longitude;
+                                    _context.SaveChanges();
                                 }
-                                
-
                             }
+
                         }
                     }
                 }
+            }
+        }
 
+
+        private static void CreateScript()
+        {
+            AGEMKOContext _context = new AGEMKOContext();
+            /*
+                      * 1= ΕΠΙΜΕΡΟΥΣ ΚΑΤΗΓΟΡΙΑ
+                      * 6 = ΕΠΩΝΥΜΙΑ	
+                      * 7 = ΔΙΑΚΡΙΤΙΚΟΣ ΤΙΤΛΟΣ
+                      * 10 = ΣΤΟΙΧΕΙΑ Δ/ΝΣΗΣ
+                      * 14 = email
+                      * 
+                      * Διακριτικό τίτλο
+                         Επωνυμία
+                         Κατηγορία
+                         Ετος ίδρυσης
+                         Στοιχεία επικοινωνίας (δ/νση, τηλ, email)
+                      */
+            StringBuilder sb = new StringBuilder();
+            List<MainTable> listOfRecords = _context.MainTable.ToList();
+            
+            foreach (MainTable record in listOfRecords)
+            {
+                //style='list-style: none'
+                string description = string.Format("<div><ul><li>{0}</li><li>{1}</li><li>{2}</li><li>{3}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"), record.Email);
+
+                var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]{3,7}", string.Empty);
+
+                string query = string.Format(@"
+                                             SET @g = 'POINT({0} {1})';
+                                             INSERT INTO `wpct_3_wpgmza`(`id`, `map_id`, `address`, `description`, `pic`, `link`, `icon`, `lat`, `lng`, `anim`, `title`, `infoopen`, `category`, `approved`, `retina`, `type`, `did`, `other_data`, `latlng`) VALUES 
+                                             ({2}, 1, '{3}', '{4}', '', '', '', '{0}', '{1}', '0', '{5}', '0', '0', 1, 0, 0, '', '{6}', ST_PointFromText(@g));
+                                             "
+               , record.Latitude
+               , record.Longitude
+               , record.Id
+               , output //record.Address.Replace("'", "''")
+               , description
+               , record.Epwnumia.Replace("'", "''")
+               , "a:1:{i:0;s:1:''0'';}");
+
+                sb.Append(query);
+
+                if (!string.IsNullOrWhiteSpace(record.Email))
+                {
+                    string emailInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (2,{0},'{1}')", record.Id, record.Email);
+
+                    sb.Append(emailInsert);
+                }
             }
 
             using (StreamWriter writer = new StreamWriter($"FinalSqlScript{DateTime.Now.ToString("dd_MM_yyyy_hh_mm_ss")}.txt"))
             {
                 writer.Write(sb.ToString());
             }
-
-            
         }
-
 
         private static void ReadExcelFile()
         {
@@ -197,7 +201,7 @@ namespace ConsoleAppAGEMKO
             if (File.Exists(filePath))
             {
                 FileStream stream = File.Open(filePath, FileMode.Open, FileAccess.Read);
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                //Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 //1. Reading from a binary Excel file ('97-2003 format; *.xls)
                 //IExcelDataReader excelReader = ExcelReaderFactory.CreateBinaryReader(stream);
                 //...
@@ -543,15 +547,15 @@ namespace ConsoleAppAGEMKO
             //}
 
             DataTable dt = new DataTable();
-            using (MySqlConnection conn = new MySqlConnection(myConnectionString))
-            {
-                //conn.ConnectionString = myConnectionString;
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand("SELECT * FROM mydb.individualcategory;", conn);
-                MySqlDataReader reader = cmd.ExecuteReader();
-                dt.Load(reader);
-                conn.Close();
-            }
+            //using (MySqlConnection conn = new MySqlConnection(myConnectionString))
+            //{
+            //    //conn.ConnectionString = myConnectionString;
+            //    conn.Open();
+            //    MySqlCommand cmd = new MySqlCommand("SELECT * FROM mydb.individualcategory;", conn);
+            //    MySqlDataReader reader = cmd.ExecuteReader();
+            //    dt.Load(reader);
+            //    conn.Close();
+            //}
 
         }
 
