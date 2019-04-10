@@ -56,6 +56,14 @@ namespace ConsoleAppAGEMKO.DataBase
                 entity.Property(e => e.Latitude).HasMaxLength(250);
 
                 entity.Property(e => e.Longitude).HasMaxLength(250);
+
+                entity.Property(e => e.Telephone)
+                    .HasColumnName("telephone")
+                    .HasMaxLength(250);
+
+                entity.Property(e => e.Year)
+                    .HasColumnName("year")
+                    .HasColumnType("date");
             });
         }
     }

@@ -66,8 +66,7 @@ namespace ConsoleAppAGEMKO
                         string drastiriotita = row.IsNull(9) ? string.Empty : row[9].ToString();
                         string address = row[10].ToString().Trim();
                         string email = row.IsNull(14) ? string.Empty : row[14].ToString();
-                        DateTime dt;
-                        DateTime year = row.IsNull(16) ? DateTime.Now : DateTime.TryParseExact(row[16].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture , DateTimeStyles.None , out dt) ? dt : DateTime.Now;
+                        DateTime year = row.IsNull(16) ? DateTime.Now : Convert.ToDateTime(row[16].ToString());
 
                         record.Catigoria = katigoria.Trim();
                         record.Katastasi = katastasi.Trim(); ;
@@ -77,6 +76,7 @@ namespace ConsoleAppAGEMKO
                         record.Drastiriotita = drastiriotita.Trim();
                         record.Address = address.Trim();
                         record.Email = email.Trim();
+                        record.Year = year;
                         _context.MainTable.Add(record);
                         _context.SaveChanges();
                     }
@@ -160,12 +160,13 @@ namespace ConsoleAppAGEMKO
             StringBuilder sbwpgmza = new StringBuilder();
             StringBuilder sbemail = new StringBuilder();
             StringBuilder sbyear = new StringBuilder();
+            StringBuilder sbtel = new StringBuilder();
             List<MainTable> listOfRecords = _context.MainTable.ToList();
             
             foreach (MainTable record in listOfRecords)
             {
                 //style='list-style: none'
-                string description = string.Format("<div><ul style='list-style-type:none'><li>ΔΙΑΚΡΙΤΙΚΟΣ ΤΙΤΛΟΣ: {0}</li><li>ΕΠΩΝΥΜΙΑ: {1}</li><li>ΚΑΤΗΓΟΡΙΑ: {2}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"));
+                string description = string.Format("<div><ul style='list-style-type:none'><li>Δ.Τ: {0}</li><li>ΔΡΑΣΤΗΡΙΟΤΗΤΑ: {1}</li><li>ΚΑΤΗΓΟΡΙΑ: {2}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"));
 
                 var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]{3,7}", string.Empty);
 
@@ -194,7 +195,14 @@ namespace ConsoleAppAGEMKO
 
                 if (!string.IsNullOrWhiteSpace(record.Email))
                 {
-                    string yearInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (1,{0},'{1}');", record.Id, record.Email);
+                    string yearInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (1,{0},'{1}');", record.Id, record.Year.HasValue ? record.Year.Value.Year);
+
+                    sbyear.AppendLine(yearInsert);
+                }
+
+                if (!string.IsNullOrWhiteSpace(record.Telephone))
+                {
+                    string yearInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (3,{0},'{1}');", record.Id, record.Telephone);
 
                     sbyear.AppendLine(yearInsert);
                 }

@@ -16,5 +16,7 @@ namespace ConsoleAppAGEMKO.DataBase
         public string Latitude { get; set; }
         public string Longitude { get; set; }
         public int Id { get; set; }
+        public DateTime? Year { get; set; }
+        public string Telephone { get; set; }
     }
 }
