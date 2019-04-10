@@ -20,8 +20,8 @@ namespace ConsoleAppAGEMKO
         static void Main(string[] args)
         {
             //ReadExcelFile();
-            //CreateScript();
-            ReadExcelFileForSqlScript();
+            CreateScript();
+            //ReadExcelFileForSqlScript();
             //testc();
             Console.WriteLine("Hello World!");
         }
@@ -32,7 +32,7 @@ namespace ConsoleAppAGEMKO
             AGEMKOContext _context = new AGEMKOContext();
 
             string filePath = System.AppDomain.CurrentDomain.BaseDirectory;
-            filePath = Path.Combine(filePath, "ReceivedExcel.xlsx");
+            filePath = Path.Combine(filePath, "NewReceivedExcel.xlsx");
             DataSet result = new DataSet();
             if (File.Exists(filePath))
             {
@@ -67,6 +67,7 @@ namespace ConsoleAppAGEMKO
                         string address = row[10].ToString().Trim();
                         string email = row.IsNull(14) ? string.Empty : row[14].ToString();
                         DateTime year = row.IsNull(16) ? DateTime.Now : Convert.ToDateTime(row[16].ToString());
+                        string telephone = row.IsNull(14) ? string.Empty : row[18].ToString().Replace(',','|');
 
                         record.Catigoria = katigoria.Trim();
                         record.Katastasi = katastasi.Trim(); ;
@@ -77,6 +78,7 @@ namespace ConsoleAppAGEMKO
                         record.Address = address.Trim();
                         record.Email = email.Trim();
                         record.Year = year;
+                        record.Telephone = telephone;
                         _context.MainTable.Add(record);
                         _context.SaveChanges();
                     }
@@ -166,9 +168,10 @@ namespace ConsoleAppAGEMKO
             foreach (MainTable record in listOfRecords)
             {
                 //style='list-style: none'
-                string description = string.Format("<div><ul style='list-style-type:none'><li>Δ.Τ: {0}</li><li>ΔΡΑΣΤΗΡΙΟΤΗΤΑ: {1}</li><li>ΚΑΤΗΓΟΡΙΑ: {2}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"));
+                string description = string.Format("<div><ul><li><b>Δ.ΤΙΤΛΟΣ:</b> {0}</li><li><b>ΔΡΑΣΤΗΡΙΟΤΗΤΑ:</b> {1}</li><li><b>ΕΙΔΟΣ:</b> {2}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"));
 
-                var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]{3,7}", string.Empty);
+                //var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]{3,7}", string.Empty);
+                var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]", string.Empty);
 
                 string query = string.Format(@"
                                              SET @g = 'POINT({0} {1})';
@@ -195,21 +198,22 @@ namespace ConsoleAppAGEMKO
 
                 if (!string.IsNullOrWhiteSpace(record.Email))
                 {
-                    string yearInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (1,{0},'{1}');", record.Id, record.Year.HasValue ? record.Year.Value.Year);
+                    string yearInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (1,{0},'{1}');", record.Id, record.Year.Value.Year);
 
                     sbyear.AppendLine(yearInsert);
                 }
 
                 if (!string.IsNullOrWhiteSpace(record.Telephone))
                 {
-                    string yearInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (3,{0},'{1}');", record.Id, record.Telephone);
+                    string tel = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (3,{0},'{1}');", record.Id, record.Telephone.Trim());
 
-                    sbyear.AppendLine(yearInsert);
+                    sbtel.AppendLine(tel);
                 }
             }
 
             sbwpgmza.Append(sbemail);
             sbwpgmza.Append(sbyear);
+            sbwpgmza.Append(sbtel);
 
             using (StreamWriter writer = new StreamWriter($"FinalSqlScript{DateTime.Now.ToString("dd_MM_yyyy_hh_mm_ss")}.txt"))
             {
