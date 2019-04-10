@@ -8,6 +8,7 @@ using System.Text;
 using System.Linq;
 using ConsoleAppAGEMKO.DataBase;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace ConsoleAppAGEMKO
 {
@@ -19,8 +20,8 @@ namespace ConsoleAppAGEMKO
         static void Main(string[] args)
         {
             //ReadExcelFile();
-            CreateScript();
-            //ReadExcelFileForSqlScript();
+            //CreateScript();
+            ReadExcelFileForSqlScript();
             //testc();
             Console.WriteLine("Hello World!");
         }
@@ -65,6 +66,8 @@ namespace ConsoleAppAGEMKO
                         string drastiriotita = row.IsNull(9) ? string.Empty : row[9].ToString();
                         string address = row[10].ToString().Trim();
                         string email = row.IsNull(14) ? string.Empty : row[14].ToString();
+                        DateTime dt;
+                        DateTime year = row.IsNull(16) ? DateTime.Now : DateTime.TryParseExact(row[16].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture , DateTimeStyles.None , out dt) ? dt : DateTime.Now;
 
                         record.Catigoria = katigoria.Trim();
                         record.Katastasi = katastasi.Trim(); ;
@@ -154,13 +157,15 @@ namespace ConsoleAppAGEMKO
                          Ετος ίδρυσης
                          Στοιχεία επικοινωνίας (δ/νση, τηλ, email)
                       */
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sbwpgmza = new StringBuilder();
+            StringBuilder sbemail = new StringBuilder();
+            StringBuilder sbyear = new StringBuilder();
             List<MainTable> listOfRecords = _context.MainTable.ToList();
             
             foreach (MainTable record in listOfRecords)
             {
                 //style='list-style: none'
-                string description = string.Format("<div><ul><li>{0}</li><li>{1}</li><li>{2}</li><li>{3}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"), record.Email);
+                string description = string.Format("<div><ul style='list-style-type:none'><li>ΔΙΑΚΡΙΤΙΚΟΣ ΤΙΤΛΟΣ: {0}</li><li>ΕΠΩΝΥΜΙΑ: {1}</li><li>ΚΑΤΗΓΟΡΙΑ: {2}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"));
 
                 var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]{3,7}", string.Empty);
 
@@ -169,27 +174,38 @@ namespace ConsoleAppAGEMKO
                                              INSERT INTO `wpct_3_wpgmza`(`id`, `map_id`, `address`, `description`, `pic`, `link`, `icon`, `lat`, `lng`, `anim`, `title`, `infoopen`, `category`, `approved`, `retina`, `type`, `did`, `other_data`, `latlng`) VALUES 
                                              ({2}, 1, '{3}', '{4}', '', '', '', '{0}', '{1}', '0', '{5}', '0', '0', 1, 0, 0, '', '{6}', ST_PointFromText(@g));
                                              "
-               , record.Latitude
-               , record.Longitude
+               , !string.IsNullOrWhiteSpace(record.Latitude) ? record.Latitude.Replace(',','.') : string.Empty
+               , !string.IsNullOrWhiteSpace(record.Longitude) ? record.Longitude.Replace(',', '.') : string.Empty
                , record.Id
                , output //record.Address.Replace("'", "''")
                , description
                , record.Epwnumia.Replace("'", "''")
                , "a:1:{i:0;s:1:''0'';}");
 
-                sb.Append(query);
+                sbwpgmza.Append(query);
+                sbwpgmza.AppendLine();
 
                 if (!string.IsNullOrWhiteSpace(record.Email))
                 {
-                    string emailInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (2,{0},'{1}')", record.Id, record.Email);
+                    string emailInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (2,{0},'{1}');", record.Id, record.Email);
 
-                    sb.Append(emailInsert);
+                    sbemail.AppendLine(emailInsert);
+                }
+
+                if (!string.IsNullOrWhiteSpace(record.Email))
+                {
+                    string yearInsert = string.Format("INSERT INTO `wpct_3_wpgmza_markers_has_custom_fields`(`field_id`, `object_id`, `value`) VALUES (1,{0},'{1}');", record.Id, record.Email);
+
+                    sbyear.AppendLine(yearInsert);
                 }
             }
 
+            sbwpgmza.Append(sbemail);
+            sbwpgmza.Append(sbyear);
+
             using (StreamWriter writer = new StreamWriter($"FinalSqlScript{DateTime.Now.ToString("dd_MM_yyyy_hh_mm_ss")}.txt"))
             {
-                writer.Write(sb.ToString());
+                writer.Write(sbwpgmza.ToString());
             }
         }
 
