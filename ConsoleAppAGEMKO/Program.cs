@@ -14,7 +14,7 @@ namespace ConsoleAppAGEMKO
 {
     class Program
     {
-
+        //Scaffold-DbContext "Server=DEV-STAVROU;Database=AGEMKO;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer -OutputDir DataBase -f
         private static Businesses selectedBusiness = new Businesses();
 
         static void Main(string[] args)
