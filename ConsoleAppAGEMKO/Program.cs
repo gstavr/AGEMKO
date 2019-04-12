@@ -20,8 +20,8 @@ namespace ConsoleAppAGEMKO
         static void Main(string[] args)
         {
             //ReadExcelFile();
+            ReadExcelFileForSqlScript();
             CreateScript();
-            //ReadExcelFileForSqlScript();
             //testc();
             Console.WriteLine("Hello World!");
         }
@@ -168,7 +168,7 @@ namespace ConsoleAppAGEMKO
             foreach (MainTable record in listOfRecords)
             {
                 //style='list-style: none'
-                string description = string.Format("<div><ul><li><b>Δ.ΤΙΤΛΟΣ:</b> {0}</li><li><b>ΔΡΑΣΤΗΡΙΟΤΗΤΑ:</b> {1}</li><li><b>ΕΙΔΟΣ:</b> {2}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Epwnumia.Replace("'", "''"), record.Catigoria.Replace("'", "''"));
+                string description = string.Format("<div><ul><li><b>Δ.ΤΙΤΛΟΣ:</b> {0}</li><li><b>ΔΡΑΣΤΗΡΙΟΤΗΤΑ:</b> {1}</li><li><b>ΕΙΔΟΣ:</b> {2}</li></ul></div>", record.DiakritosTitlos.Replace("'", "''"), record.Drastiriotita.Replace("'", "''"), record.Catigoria.Replace("'", "''"));
 
                 //var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]{3,7}", string.Empty);
                 var output = Regex.Replace(record.Address.Replace("'", "''"), @"[\d]", string.Empty);
